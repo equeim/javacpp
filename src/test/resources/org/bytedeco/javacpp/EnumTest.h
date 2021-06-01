@@ -3,19 +3,19 @@ enum class BoolEnum : bool {
 };
 
 enum class CharEnum : char {
-    CHAR_ENUM = 42
+    CHAR_ENUM = 123
 };
 
 enum class ShortEnum : short {
-    SHORT_ENUM = 654
+    SHORT_ENUM = 123
 };
 
 enum /* no class */ IntEnum : int {
-    INT_ENUM = 987
+    INT_ENUM = 123
 };
 
 enum /* no class */ LongEnum : long long {
-    LONG_ENUM = 121110
+    LONG_ENUM = 123
 };
 
 BoolEnum Char2Bool(CharEnum e) {

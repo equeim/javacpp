@@ -39,6 +39,7 @@ import static org.junit.Assert.*;
 public class EnumTest {
 
     public static enum BoolEnum {
+        WRONG(false),
         BOOL(true);
 
         public final boolean value;
@@ -46,6 +47,7 @@ public class EnumTest {
     }
 
     @Name("CharEnum") public static enum ByteEnum {
+        WRONG((byte) 42),
         BYTE((byte)123);
 
         public final byte value;
@@ -53,21 +55,24 @@ public class EnumTest {
     }
 
     public static enum ShortEnum {
-        SHORT((short)456);
+        WRONG((short)42),
+        SHORT((short)123);
 
         public final short value;
         private ShortEnum(short v) { this.value = v; }
     }
 
     public static enum IntEnum {
-        INT(789);
+        WRONG(42),
+        INT(123);
 
         public final int value;
         private IntEnum(int v) { this.value = v; }
     }
 
     public static enum LongEnum {
-        LONG(101112);
+        WRONG(42),
+        LONG(123);
 
         public final long value;
         private LongEnum(long v) { this.value = v; }
@@ -79,7 +84,7 @@ public class EnumTest {
         private native void allocate();
 
         public LongEnum call(ByteEnum e) {
-            assertEquals(42, e.value);
+            assertEquals(ByteEnum.BYTE, e);
             return LongEnum.LONG;
         }
     }
@@ -102,10 +107,10 @@ public class EnumTest {
     @Test public void testEnum() {
         System.out.println("Enum");
 
-        assertEquals(true, Char2Bool(ByteEnum.BYTE).value);
-        assertEquals(123, Char2Short(ByteEnum.BYTE).value);
-        assertEquals(789, Int2Long(IntEnum.INT).value);
-        assertEquals(101112, enumCallback(new EnumCallback()).value);
+        assertEquals(BoolEnum.BOOL, Char2Bool(ByteEnum.BYTE));
+        assertEquals(ShortEnum.SHORT, Char2Short(ByteEnum.BYTE));
+        assertEquals(LongEnum.LONG, Int2Long(IntEnum.INT));
+        assertEquals(LongEnum.LONG, enumCallback(new EnumCallback()));
 
         try {
             Int2Long(null);

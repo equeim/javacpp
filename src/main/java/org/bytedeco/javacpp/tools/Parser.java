@@ -3746,8 +3746,7 @@ public class Parser {
                           +  enumSpacing2 + "    public final " + javaType + " value;\n"
                           +  enumSpacing2 + "    private " + shortName  + "(" + javaType + " v) { this.value = v; }\n"
                           +  enumSpacing2 + "    private " + shortName  + "(" + shortName + " e) { this.value = e.value; }\n"
-                          +  enumSpacing2 + "    public " + shortName + " intern() { for (" + shortName + " e : values()) if (e.value == value) return e; return this; }\n"
-                          +  enumSpacing2 + "    @Override public String toString() { return intern().name(); }\n"
+                          +  enumSpacing2 + "    public " + shortName + " intern() { return this; }\n"
                           +  enumSpacing2 + "}";
                 info2 = new Info(infoMap.getFirst(cppType)).cppNames(cppName);
                 info2.valueTypes = Arrays.copyOf(info2.valueTypes, info2.valueTypes.length + 1);

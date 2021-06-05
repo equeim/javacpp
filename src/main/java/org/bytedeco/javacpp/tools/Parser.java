@@ -2569,14 +2569,29 @@ public class Parser {
                 if (context.namespace != null && context.javaName == null) {
                     decl.text += "@Namespace(\"" + context.namespace + "\") ";
                 }
-                if (metadcl != null && metadcl.cppName != null && metadcl.cppName.length() > 0) {
+                final boolean hasMetadcl = metadcl != null && metadcl.cppName != null && metadcl.cppName.length() > 0;
+                if (hasMetadcl) {
                     decl.text += metadcl.indices == 0
                             ? "@Name(\"" + metadcl.cppName + "." + shortName + "\") "
                             : "@Name({\"" + metadcl.cppName + "\", \"." + shortName + "\"}) ";
                     dcl.type.annotations = dcl.type.annotations.replaceAll("@Name\\(.*\\) ", "");
                     javaName = metadcl.javaName + "_" + shortName;
                 }
+
                 final boolean hasSetter = !(dcl.type.constValue && dcl.indirections == 0) && !dcl.constPointer && !dcl.type.constExpr && !context.immutable;
+
+                final boolean beanify = context.beanify && indices.isEmpty();
+                String capitalizedJavaName = null;
+                if (beanify) {
+                    if (!hasMetadcl && (!hasSetter || Character.isUpperCase(javaName.charAt(0)))) {
+                        // If member name starts with uppercase letter, add explicit @Name annotation
+                        // otherwise Generator will lowercase it when stripping get/set prefixes
+                        decl.text += "@Name(\"" + shortName + "\") ";
+                        dcl.type.annotations = dcl.type.annotations.replaceAll("@Name\\(.*\\) ", "");
+                    }
+                    capitalizedJavaName = javaName.substring(0, 1).toUpperCase() + javaName.substring(1);
+                    javaName = "get" + capitalizedJavaName;
+                }
                 if (!hasSetter) {
                     decl.text += "@MemberGetter ";
                 }
@@ -2585,6 +2600,9 @@ public class Parser {
                 if (hasSetter) {
                     if (indices.length() > 0) {
                         indices += ", ";
+                    }
+                    if (beanify) {
+                        javaName = "set" + capitalizedJavaName;
                     }
                     String javaTypeWithoutAnnotations = dcl.type.javaName.substring(dcl.type.javaName.lastIndexOf(" ") + 1);
                     decl.text += " " + modifiers + setterType + javaName + "(" + indices + javaTypeWithoutAnnotations + " setter);";
@@ -3309,6 +3327,8 @@ public class Parser {
                 ctx.virtualize = true;
             if (info.immutable)
                 ctx.immutable = true;
+            if (info.beanify)
+                ctx.beanify = true;
         }
         ctx.baseType = base.cppName;
 

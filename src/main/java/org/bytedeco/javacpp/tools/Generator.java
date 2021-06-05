@@ -3520,8 +3520,16 @@ public class Generator {
 
         boolean canBeGetter =  info.returnType != void.class || (info.parameterTypes.length > 0 &&
                 info.parameterTypes[0].isArray() && info.parameterTypes[0].getComponentType().isPrimitive());
+        boolean hasGetterPrefix = false;
+        if (canBeGetter) {
+            hasGetterPrefix = info.name.startsWith("get") && info.name.length() > 3;
+        }
         boolean canBeSetter = (info.returnType == void.class ||
                 info.returnType == info.cls) && info.parameterTypes.length > 0;
+        boolean hasSetterPrefix = false;
+        if (canBeSetter) {
+            hasSetterPrefix = info.name.startsWith("set") && info.name.length() > 3;
+        }
         boolean canBeAllocator = !Modifier.isStatic(info.modifiers) && info.returnType == void.class;
         boolean canBeArrayAllocator = canBeAllocator && info.parameterTypes.length == 1 &&
                 (info.parameterTypes[0] == int.class || info.parameterTypes[0] == long.class);
@@ -3560,6 +3568,9 @@ public class Generator {
                 canBeValueSetter = true;
             } else if (info2.name.equals(info.name)) {
                 info.overloaded = true;
+                canBeMemberGetter = canBeGetter;
+                canBeMemberSetter = canBeSetter;
+            } else if (((hasGetterPrefix && info2.name.startsWith("set")) || (hasSetterPrefix && info2.name.startsWith("get"))) && info2.name.length() > 3 && info2.name.substring(3).equals(info.name.substring(3))) {
                 canBeMemberGetter = canBeGetter;
                 canBeMemberSetter = canBeSetter;
             } else {
@@ -3666,6 +3677,10 @@ public class Generator {
             name = info.pairedMethod.getAnnotation(Name.class);
             if (name != null) {
                 info.memberName = name.value();
+            } else if (((info.memberGetter && hasGetterPrefix) || (info.memberSetter && hasSetterPrefix)) && !info.name.equals(info.pairedMethod.getName())) {
+                // Strip get/set prefix from member name only if we have paired method with other prefix
+                // Otherwise, we rely on presence of @Name annotation
+                info.memberName = new String[] { info.name.substring(3, 4).toLowerCase() + info.name.substring(4) };
             }
         }
 

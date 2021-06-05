@@ -2552,25 +2552,43 @@ public class Parser {
                 if (context.namespace != null && context.javaName == null) {
                     decl.text += "@Namespace(\"" + context.namespace + "\") ";
                 }
-                if (metadcl != null && metadcl.cppName != null && metadcl.cppName.length() > 0) {
-                    decl.text += metadcl.indices == 0
+                final boolean hasMetadcl = metadcl != null && metadcl.cppName != null && metadcl.cppName.length() > 0;
+                String nameAnnotation = "";
+                if (hasMetadcl) {
+                    nameAnnotation = metadcl.indices == 0
                             ? "@Name(\"" + metadcl.cppName + "." + shortName + "\") "
                             : "@Name({\"" + metadcl.cppName + "\", \"." + shortName + "\"}) ";
-                    dcl.type.annotations = dcl.type.annotations.replaceAll("@Name\\(.*\\) ", "");
                     javaName = metadcl.javaName + "_" + shortName;
                 }
+                final boolean addMemberPrefixes = context.addMemberPrefixes && indices.isEmpty();
+                String capitalizedJavaName = null;
+                if (addMemberPrefixes) {
+                    if (!hasMetadcl) {
+                        nameAnnotation = "@Name(\"" + shortName + "\") ";
+                    }
+                    capitalizedJavaName = javaName.substring(0, 1).toUpperCase() + javaName.substring(1);
+                    javaName = "get" + capitalizedJavaName;
+                }
+                if (hasMetadcl || addMemberPrefixes) {
+                    dcl.type.annotations = dcl.type.annotations.replaceAll("@Name\\(.*\\) ", "");
+                    decl.text += nameAnnotation;
+                }
+                dcl.type.annotations = dcl.type.annotations.replace("@ByVal ", "@ByRef ");
                 final boolean hasSetter = !(dcl.type.constValue && dcl.indirections == 0) && !dcl.constPointer && !dcl.type.constExpr && !context.immutable;
-                if (!hasSetter) {
+                if (!hasSetter || addMemberPrefixes) {
                     decl.text += "@MemberGetter ";
                 }
-                decl.text += modifiers + dcl.type.annotations.replace("@ByVal ", "@ByRef ")
-                          + dcl.type.javaName + " " + javaName + "(" + indices + ");";
+                decl.text += modifiers + dcl.type.annotations + dcl.type.javaName + " " + javaName + "(" + indices + ");";
                 if (hasSetter) {
                     if (indices.length() > 0) {
                         indices += ", ";
                     }
-                    String javaTypeWithoutAnnotations = dcl.type.javaName.substring(dcl.type.javaName.lastIndexOf(" ") + 1);
-                    decl.text += " " + modifiers + setterType + javaName + "(" + indices + javaTypeWithoutAnnotations + " setter);";
+                    if (addMemberPrefixes) {
+                        decl.text += "\n" + nameAnnotation + "@MemberSetter " + modifiers + setterType + "set" + capitalizedJavaName + "(" + indices + dcl.type.annotations + dcl.type.javaName + " setter);";
+                    } else {
+                        String javaTypeWithoutAnnotations = dcl.type.javaName.substring(dcl.type.javaName.lastIndexOf(" ") + 1);
+                        decl.text += " " + nameAnnotation + modifiers + setterType + javaName + "(" + indices + javaTypeWithoutAnnotations + " setter);";
+                    }
                 }
                 decl.text += "\n";
                 if ((dcl.type.constValue || dcl.constPointer || dcl.type.constExpr) && dcl.type.staticMember && indices.length() == 0) {
@@ -3292,6 +3310,8 @@ public class Parser {
                 ctx.virtualize = true;
             if (info.immutable)
                 ctx.immutable = true;
+            if (info.addMemberPrefixes)
+                ctx.addMemberPrefixes = true;
         }
         ctx.baseType = base.cppName;
 
